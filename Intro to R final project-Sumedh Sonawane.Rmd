@@ -1,0 +1,197 @@
+---
+title: "intro to r final project-Sumedh .A.Sonawane"
+author: "Sumedh Sonawane"
+date: "2023-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Importing the libraries
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+library(ggrepel)
+library(dplyr)
+library(ggplot2)
+library(car)
+```
+
+#### Importing the dataset
+
+```{r}
+data <-read.csv('C:/Downloads/final_dataset.csv')
+```
+
+#### Data Exploration
+
+```{r}
+head(data)
+summary(data)
+```
+
+#### Finding the avg,max goals
+
+```{r}
+mean_goals <- mean(data$FTHG + data$FTAG)
+max_goals <- max(data$FTHG + data$FTAG)
+total_matches <- nrow(data)
+total_teams <- length(unique(c(data$HomeTeam, data$AwayTeam)))
+
+cat("Average goals per match:", mean_goals, "\n")
+cat("Maximum goals in a match:", max_goals, "\n")
+cat("Total matches:", total_matches, "\n")
+cat("Total teams:", total_teams, "\n")
+```
+
+```{r}
+mean_goals <- mean(data$FTHG + data$FTAG)
+max_goals <- max(data$FTHG + data$FTAG)
+total_matches <- nrow(data)
+total_teams <- length(unique(c(data$HomeTeam, data$AwayTeam)))
+```
+
+```{r}
+stats_df <- data.frame(
+  Metric = c("Average goals per match", "Maximum goals in a match", "Total matches", "Total teams"),
+  Value = c(mean_goals, max_goals, total_matches, total_teams)
+)
+```
+
+```{r}
+stats_df$Value <- as.numeric(stats_df$Value)
+```
+
+```{r}
+ggplot(stats_df, aes(x = Metric, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", color = "black") +
+  geom_text(aes(label = round(Value, 2)), vjust = -0.3) +
+  theme_minimal() +
+  labs(title = "Basic Statistics",
+       x = "Statistics",
+       y = "Value")
+```
+
+#### Team performance analysis
+
+```{r}
+data$HTTotalGoals <- data$HTGS + data$ATGC
+data$ATTotalGoals <- data$ATGS + data$HTGC
+```
+
+#### Goals scored by each team
+
+```{r}
+ggplot(data, aes(x = HomeTeam, y = HTTotalGoals)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  ggtitle("Total Goals Scored by each Team") +
+  xlab("Team") + ylab("Total Goals")
+
+```
+
+#### Goals conceded by each team
+
+```{r}
+ggplot(data, aes(x = AwayTeam, y = ATTotalGoals)) +
+  geom_bar(stat = "identity", fill = "red") +
+  ggtitle("Total Goals Conceded by Each Team") +
+  xlab("Team") + ylab("Total Goals")
+```
+
+#### Team form analysis
+
+```{r}
+data$HTAvgPoints <- data$HTP / data$MW
+data$ATAvgPoints <- data$ATP / data$MW
+```
+
+#### Average points for each team
+
+```{r}
+ggplot(data, aes(x = HomeTeam, y = HTAvgPoints)) +
+  geom_bar(stat = "identity", fill = "brown") +
+  ggtitle("Average Points for Each Team") +
+  xlab("Team") + ylab("Average Points")
+```
+
+#### Average points conceded by each team
+
+```{r}
+ggplot(data , aes(x = AwayTeam, y = ATAvgPoints)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  ggtitle("Average Points Conceded by Each Team") +
+  xlab("Team") + ylab("Average Points")
+```
+
+#### Goal difference analysis
+
+```{r}
+data$HTGoalDiff <- data$HTGD - data$ATGD
+data$ATGoalDiff <- data$ATGD - data$HTGD
+
+```
+
+#### Goal difference of Home Teams
+
+```{r}
+ggplot(data , aes(x = HomeTeam, y = HTGoalDiff)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  ggtitle("Goal Difference for Home Teams") +
+  xlab("Team") + ylab("Goal Difference")
+```
+
+#### Goal difference of Away Teams
+
+```{r}
+ggplot(data, aes(x = AwayTeam, y = ATGoalDiff)) +
+  geom_bar(stat = "identity", fill = "red") +
+  ggtitle("Goal Difference for Away Teams") +
+  xlab("Team") + ylab("Goal Difference")
+```
+
+#### Linear model to predict the number of goals scored by home team
+
+```{r}
+model <- lm(FTHG ~ HTGS + ATGC + HTFormPts + ATFormPts + HTWinStreak3 + ATLossStreak3, data = data)
+```
+
+```{r}
+summary(model)
+```
+
+```{r}
+predictions <- predict(model, newdata = data)
+```
+
+#### Visualization to predict the actual goals score vs predicted home team goals
+
+```{r}
+plot(data$FTHG, predictions, main = "Actual vs Predicted Home Team Goals", 
+     xlab = "Actual Goals", ylab = "Predicted Goals", col = "blue")
+```
+
+```{r}
+rmse <- sqrt(mean((data$FTHG - predictions)^2))
+mae <- mean(abs(data$FTHG - predictions))
+
+```
+
+```{r}
+rmse
+mae
+```
+
+### **Interpretation:**
+
+-   The model suggests that factors like the number of goals scored by the home team and away team, recent form, and the away team's losing streak can be predictors of the number of goals scored by the home team.
+
+-   However, the model's overall explanatory power is limited, as indicated by the low R-squared value.
+
+### **Audience Benefits:**
+
+-   Team managers and fantasy game players can use the model to gain insights into potential factors influencing a team's goal-scoring performance.
+
+-   Fans might find it interesting to understand which aspects of team performance are statistically associated with goal-scoring.
